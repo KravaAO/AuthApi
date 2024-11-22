@@ -1,5 +1,5 @@
+![Flask Logo](https://flask.palletsprojects.com/en/stable/_images/flask-horizontal.png)
 # AuthorizationApi
-
 ## Install Requirements
 To install the necessary dependencies, run the following command:
 ```commandline
