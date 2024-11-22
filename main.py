@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
+import json
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -15,6 +16,14 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
+
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    task_name = db.Column(db.String(120), nullable=False)
+    status = db.Column(db.String(50), nullable=False)
+    config = db.Column(db.Text, nullable=True)
+    selectors = db.Column(db.Text, nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -53,15 +62,64 @@ def login():
 @jwt_required()
 def save():
     current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
     data = request.get_json()
     task_name = data.get('task_name')
     status = data.get('status')
     config = data.get('config')
     selectors = data.get('selectors')
 
+    if not task_name or not status:
+        return jsonify({'message': 'Task name and status are required'}), 400
 
-    print(current_user, task_name, status, config, selectors)
-    return jsonify({'message': f'User {current_user} saved the task successfully!'}), 200
+    try:
+        # Конвертація у JSON
+        config_json = json.dumps(config) if config else None
+        selectors_json = json.dumps(selectors) if selectors else None
+
+        new_task = Task(
+            task_name=task_name,
+            status=status,
+            config=config_json,
+            selectors=selectors_json,
+            user_id=user.id
+        )
+
+        db.session.add(new_task)
+        db.session.commit()
+        return jsonify({'message': f'Task "{task_name}" saved successfully for user {current_user}!'}), 201
+    except Exception as e:
+        return jsonify({'message': 'Error saving task', 'error': str(e)}), 500
+    #print(current_user, task_name, status, config, selectors)
+    #return jsonify({'message': f'User {current_user} saved the task successfully!'}), 200
+
+@app.route('/tasks', methods=['GET'])
+@jwt_required()
+def get_tasks():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
+
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    tasks = Task.query.filter_by(user_id=user.id).all()
+
+    tasks_list = [
+        {
+            'task_name': task.task_name,
+            'status': task.status,
+            'config': json.loads(task.config) if task.config else None,
+            'selectors': json.loads(task.selectors) if task.selectors else None
+        }
+        for task in tasks
+    ]
+
+    return jsonify({'tasks': tasks_list}), 200
+
 
 if __name__ == '__main__':
     if not os.path.exists('users.db'):
