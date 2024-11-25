@@ -1,7 +1,6 @@
 ![Flask Logo](https://flask.palletsprojects.com/en/stable/_images/flask-horizontal.png)
 ![Docker Logo](https://blog.codewithdan.com/wp-content/uploads/2023/06/Docker-Logo.png)
 
-# AuthorizationApi
 ## Docker Setup
 To run the project using Docker, follow these steps:
 
