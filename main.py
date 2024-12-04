@@ -1,22 +1,30 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
 import json
 
 app = Flask(__name__)
+
+# Налаштування Flask
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['JWT_SECRET_KEY'] = 'your_secret_key_here'
+
+# Додати підтримку CORS
+CORS(app, resources={r"/*": {"origins": "http://localhost:5123"}})
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
+# Модель користувача
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
 
+# Модель завдання
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task_name = db.Column(db.String(120), nullable=False)
@@ -25,6 +33,7 @@ class Task(db.Model):
     selectors = db.Column(db.Text, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+# Реєстрація користувача
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -44,6 +53,7 @@ def register():
     except:
         return jsonify({'message': 'Username already exists'}), 400
 
+# Авторизація користувача
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -58,6 +68,7 @@ def login():
     else:
         return jsonify({'message': 'Invalid username or password'}), 401
 
+# Збереження завдання
 @app.route('/save', methods=['POST'])
 @jwt_required()
 def save():
@@ -77,7 +88,6 @@ def save():
         return jsonify({'message': 'Task name and status are required'}), 400
 
     try:
-        # Конвертація у JSON
         config_json = json.dumps(config) if config else None
         selectors_json = json.dumps(selectors) if selectors else None
 
@@ -94,9 +104,8 @@ def save():
         return jsonify({'message': f'Task "{task_name}" saved successfully for user {current_user}!'}), 201
     except Exception as e:
         return jsonify({'message': 'Error saving task', 'error': str(e)}), 500
-    #print(current_user, task_name, status, config, selectors)
-    #return jsonify({'message': f'User {current_user} saved the task successfully!'}), 200
 
+# Отримання завдань
 @app.route('/tasks', methods=['GET'])
 @jwt_required()
 def get_tasks():
@@ -120,7 +129,7 @@ def get_tasks():
 
     return jsonify({'tasks': tasks_list}), 200
 
-
+# Головна частина
 if __name__ == '__main__':
     if not os.path.exists('users.db'):
         with app.app_context():
