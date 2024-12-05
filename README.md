@@ -54,17 +54,12 @@ http://127.0.0.1:5001
   - `Authorization: Bearer <JWT_TOKEN>`
 - **Body**:
   ```json
-  {
-    "task_name": "My Task 1",
-    "status": "Pending",
-    "config": {
-      "test": "Українська"
-    },
-    "selectors": ["selector1", "selector2"]
-  }
+  [
+      {"field_1": [1, 2, 3]}, {"field_2": [4, 5, 6]}
+  ]
   ```
 - **Response**:
-  - `201 Created` - Task saved successfully
+  - `201 Created` - saved successfully
   - `400 Bad Request` - Missing required fields
   - `500 Internal Server Error` - Error saving the task
 
