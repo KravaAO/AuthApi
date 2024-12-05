@@ -1,3 +1,4 @@
+from flask import send_file
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -122,7 +123,43 @@ def get_tasks():
     # Повернення результату як JSON
     return jsonify({'tasks': tasks_list}), 200
 
-# Головна частина
+@app.route('/export_json/<int:task_id>', methods=['GET'])
+@jwt_required()
+def export_json(task_id):
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
+
+    # Перевірка, чи існує користувач
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    # Логування користувача та запитуваного task_id
+    print(f"Current user: {user.username}, user_id: {user.id}, requested task_id: {task_id}")
+
+    # Знайти завдання за task_id та user_id поточного користувача
+    task = Task.query.filter_by(id=task_id, user_id=user.id).first()
+
+    if not task:
+        return jsonify({'message': f'Task with id {task_id} not found for user {user.username}'}), 404
+
+    # Формування JSON-даних для конкретного завдання
+    task_data = {
+        'id': task.id,
+        'user_id': task.user_id,
+        'data': json.loads(task.data)
+    }
+
+    # Назва файлу для експорту
+    filename = f'user_{user.id}_task_{task_id}.json'
+
+    # Запис у файл
+    with open(filename, 'w', encoding='utf-8') as json_file:
+        json.dump(task_data, json_file, ensure_ascii=False, indent=4)
+
+    # Відправка файлу як відповідь
+    return send_file(filename, as_attachment=True)
+
+
 if __name__ == '__main__':
     if os.path.exists('users.db'):
         os.remove('users.db')  # Видалити стару базу даних
