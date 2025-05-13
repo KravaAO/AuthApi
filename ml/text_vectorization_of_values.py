@@ -8,12 +8,12 @@ from sklearn.metrics import classification_report
 import joblib
 
 # 1. Завантаження великого датасету
-with open("column_dataset_large_extended.json", "r", encoding="utf-8") as f:
+with open("column_dataset_labeled.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 
 # 2. Підготовка X та y
 X = [" ".join(col["values"]) for col in data]
-y = [col["type"] for col in data]
+y = [col["column_name"] for col in data]
 
 # 3. Поділ на train/test
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
