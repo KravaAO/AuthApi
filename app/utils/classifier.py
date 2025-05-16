@@ -11,11 +11,16 @@ model = joblib.load(model_path)
 def classify_columns_with_model(df):
     result = []
     for col in df.columns:
-        values = df[col].dropna().astype(str).tolist()
+        values = df[col].dropna().tolist()
         if not values:
             result.append("unknown")
             continue
-        text = " ".join(values[:10])
+
+        # 🔁 Перетворення значень у рядки — ключова правка
+        string_values = [str(v) for v in values[:10]]
+        text = " ".join(string_values)
+
         predicted = model.predict([text])[0]
         result.append(predicted)
     return result
+

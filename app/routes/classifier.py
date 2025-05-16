@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 import pandas as pd
 from collections import Counter
 from app.utils.classifier import classify_columns_with_model
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 bp = Blueprint('classifier', __name__)
 
@@ -18,6 +19,7 @@ def make_column_names_unique(names):
     return unique_names
 
 @bp.route('/classify-columns', methods=['POST'])
+@jwt_required()
 def classify_columns():
     try:
         data = request.get_json()
